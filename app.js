@@ -18,7 +18,7 @@ app.use(
 app.set("view engine", "ejs");
 
 app.use(
-    sesion({
+    session({
         secret: "hospital_secret",
         resave: false,
         saveUninitialized: false,
