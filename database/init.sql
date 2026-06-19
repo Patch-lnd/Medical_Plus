@@ -9,7 +9,7 @@ CREATE TABLE users(
     ) NOT NULL, 
     email VARCHAR(100) UNIQUE, 
     phone VARCHAR(20) UNIQUE NOT NULL,
-    password_hash VARCHA(255) NOT NULL, 
+    password_hash VARCHAR(255) NOT NULL, 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
 );
 
