@@ -1,8 +1,10 @@
 const express = require("express")
 const session = require("express-session")
 const path = require("path")
+const authRoutes = require("./routes/auth");
 
 const app = express();
+
 
 app.use(express.urlencoded({extended:true}));
 app.use(express.json());
@@ -28,6 +30,8 @@ app.use(
         }
     })
 )
+
+app.use("/", authRoutes);
 
 app.get("/", (req, res)=>{
     res.render("login");

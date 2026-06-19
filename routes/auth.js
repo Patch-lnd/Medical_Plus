@@ -10,12 +10,12 @@ router.get("/login", (req, res)=>{
 
 // Handle login form submission
 router.post("/login", (req, res)=>{
-    const { email, password } = req.body;  
+    const { identifier, password } = req.body;  
 
         // Search by email or phone number
     const sql = 'SELECT * FROM users WHERE email = ? OR phone = ?';
     db.query(
-        sql, [email, email], 
+        sql, [identifier, identifier], 
         async(error, results)=>{
             if(err){
                 console.log(err);
