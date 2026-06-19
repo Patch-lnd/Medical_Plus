@@ -1,7 +1,10 @@
 const express = require("express")
 const session = require("express-session")
 const path = require("path")
+
+// Routes
 const authRoutes = require("./routes/auth");
+const isAuthenticated = require("./middleware/authMiddleware");
 
 const app = express();
 
@@ -36,6 +39,10 @@ app.use("/", authRoutes);
 app.get("/", (req, res)=>{
     res.render("login");
 })
+
+app.get("/dashboard", isAuthenticated, (req, res)=>{
+    res.render("dashboard", {user: req.session.user});
+});
 
 app.listen(3000, ()=>{
     console.log("Serveur démaré sur le port 3000")

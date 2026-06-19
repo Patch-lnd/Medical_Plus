@@ -9,4 +9,4 @@ function isAuthenticated(req, res,next){
     next();
 }
 
-module.experots = isAuthenticated;
+module.exports = isAuthenticated;

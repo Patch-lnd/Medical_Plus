@@ -10,7 +10,7 @@ db.connect((err)=>{
         console.log("Erreur de connexion MYSQL :", err);
         return;
     }
-    console.log("Base de données Coonecté ✔")
+    console.log("Base de données Connecté ✔")
 });
 
 module.exports = db;
