@@ -1,16 +1,33 @@
 CREATE TABLE users(
     id INT AUTO_INCREMENT PRIMARY KEY, 
+    name VARCHAR(50)NOT NULL,
     role ENUM(
+        'super_admin',
         'admin',
         'doctor',
         'nurse',
         'receptionist',
-        'patient'
+        'patient',
+        'pending'
     ) NOT NULL, 
+    requested_role ENUM(
+        'doctor',
+        'nurse',
+        'recptionist'
+    ),
+    status ENUM(
+        'pending',
+        'approved',
+        'rejected',
+        'suspended'
+    )DEFAULT 'pending',
+    approved_by INT, 
     email VARCHAR(100) UNIQUE, 
     phone VARCHAR(20) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL, 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (approved_by) REFERENCES users(id)
 );
 
 CREATE TABLE patients(
