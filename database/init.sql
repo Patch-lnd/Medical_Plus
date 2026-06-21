@@ -1,6 +1,48 @@
-CREATE TABLE users(
-    id INT AUTO_INCREMENT PRIMARY KEY, 
-    name VARCHAR(50)NOT NULL,
+CREATE TABLE hospitals (
+
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    name VARCHAR(100) NOT NULL,
+
+    city VARCHAR(100),
+
+    phone VARCHAR(20),
+
+    email VARCHAR(100),
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+);
+
+/* 
+    Table users
+
+    Cette table contient TOUS les comptes :
+
+    Super Admin
+    Admin
+    Doctor
+    Nurse
+    Receptionist
+    Patient
+    Pending Staff
+ */
+ CREATE TABLE users (
+
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    hospital_id INT NULL,
+
+    name VARCHAR(100) NOT NULL,
+
+    email VARCHAR(100) UNIQUE,
+
+    phone VARCHAR(20) UNIQUE NOT NULL,
+
+    staff_number VARCHAR(20) UNIQUE NULL,
+
+    password_hash VARCHAR(255) NOT NULL,
+
     role ENUM(
         'super_admin',
         'admin',
@@ -9,60 +51,192 @@ CREATE TABLE users(
         'receptionist',
         'patient',
         'pending'
-    ) NOT NULL, 
+    ) NOT NULL,
+
     requested_role ENUM(
         'doctor',
         'nurse',
-        'recptionist'
-    ),
+        'receptionist'
+    ) NULL,
+
     status ENUM(
         'pending',
         'approved',
         'rejected',
         'suspended'
-    )DEFAULT 'pending',
-    approved_by INT, 
-    email VARCHAR(100) UNIQUE, 
-    phone VARCHAR(20) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL, 
+    ) DEFAULT 'pending',
+
+    approved_by INT NULL,
+
+    must_change_password BOOLEAN DEFAULT FALSE,
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (approved_by) REFERENCES users(id)
+    FOREIGN KEY (hospital_id)
+        REFERENCES hospitals(id),
+
+    FOREIGN KEY (approved_by)
+        REFERENCES users(id)
+
 );
 
-CREATE TABLE patients(
-    id INT AUTO_INCREMENT PRIMARY KEY, 
+CREATE TABLE patients (
+
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
     user_id INT NOT NULL,
-    patient_number VARCHAR(20) UNIQUE NOT NULL, 
-    phone VARCHAR(20),
-    first_name VARCHAR(100) NOT NULL, 
-    last_name VARCHAR(100) NOT NULL, 
+
+    patient_number VARCHAR(20) UNIQUE NOT NULL,
+
+    birth_date DATE,
+
     gender ENUM(
         'male',
         'female'
-    )NOT NULL, 
-    birtht_date DATE, 
+    ),
+
     blood_group VARCHAR(5),
+
     allergies TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT TIMSTAMP,
-    FOREIGN KEY(user_id) REFERENCES user(id)
+
+    emergency_contact_name VARCHAR(100),
+
+    emergency_contact_phone VARCHAR(20),
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id)
+        REFERENCES users(id)
+
 );
 
-CREATE TABLE consultations(
-    id INT AUTO_INCREMEMNT PRIMARY KEY,
-    patient_id INT NOT NULL, 
-    doctor_id INT NOT NULL, 
-    consultation_date DATETIME DEFAULT CURRENT_TIMESTAMP, 
+CREATE TABLE consultations (
+
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    patient_id INT NOT NULL,
+
+    doctor_id INT NOT NULL,
+
+    hospital_id INT NOT NULL,
+
+    status ENUM(
+        'pending',
+        'completed',
+        'cancelled'
+    ) DEFAULT 'pending',
+
+    consultation_date DATETIME
+        DEFAULT CURRENT_TIMESTAMP,
+
     weight DECIMAL(5,2),
+
     height DECIMAL(5,2),
+
     temperature DECIMAL(4,2),
-    blood_presure VARCHAR(20);
-    symptoms TEXT, 
+
+    blood_pressure VARCHAR(20),
+
+    symptoms TEXT,
+
     diagnosis TEXT,
-    analysis_results TEXT, 
-    treatement TEXT, 
-    notes TEXT, 
+
+    analysis_results TEXT,
+
+    treatment TEXT,
+
+    notes TEXT,
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (patient_id) REFERENCES patients(id),
-    FOREIGN KEY(doctor_id) REFERENCES users(id)
+
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (patient_id)
+        REFERENCES patients(id),
+
+    FOREIGN KEY (doctor_id)
+        REFERENCES users(id),
+
+    FOREIGN KEY (hospital_id)
+        REFERENCES hospitals(id)
+
 );
+
+CREATE TABLE password_reset_tokens (
+
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    user_id INT NOT NULL,
+
+    token VARCHAR(255) NOT NULL,
+
+    expires_at DATETIME NOT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id)
+        REFERENCES users(id)
+
+);
+
+/* Premier Super Admin */
+
+INSERT INTO users (
+    hospital_id,
+    name,
+    email,
+    phone,
+    password_hash,
+    role,
+    status
+)
+VALUES (
+    NULL,
+    'System Administrator',
+    'admin@hospital.com',
+    '670000000',
+    'HASH_BCRYPT_ICI',
+    'super_admin',
+    'approved'
+);
+
+/* Architecture de Hierarchie des Roles */
+
+/* SUPER ADMIN 
+    Créer hôpitaux
+    Valider staff
+    Modifier tous les rôles
+    Gérer tous les hôpitaux
+ */
+
+/* ADMIN  
+    Valider staff de son hôpital
+    Modifier staff de son hôpital
+    Gérer patients de son hôpital
+*/
+
+/* DOCTOR
+    Rechercher patients
+    Créer consultations
+    Modifier consultations
+    Finaliser résultats 
+ */
+
+/* NURSE 
+    Voir patients
+    Voir consultations
+    Ajouter observations
+*/
+
+/* Réceptioniste
+    Créer patient
+    Modifier patient
+    Donner mot de passe temporaire
+ */
+
+/* Patient
+    Voir son dossier
+    Voir ses consultations
+    Changer son mot de passe  
+ */
