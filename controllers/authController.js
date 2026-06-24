@@ -6,7 +6,7 @@ exports.showLanding = (req, res) => {
     res.render("landing");
 };
 
-// Display login page and pass account type
+// Display login page
 exports.showLogin = (req, res) => {
     const type = req.query.type;
     res.render("login", { type });
@@ -16,7 +16,7 @@ exports.showLogin = (req, res) => {
 exports.showSignup = (req, res) => {
     const type = req.query.type;
 
-    // Staff accounts need hospital selection
+    // Staff accounts need the hospitals list
     if (type === "staff") {
         const query = `
             SELECT id, name
@@ -36,45 +36,12 @@ exports.showSignup = (req, res) => {
         return;
     }
 
-    // Patients do not need hospitals list
+    // Patients do not need hospitals
     res.render("signup", {
         type,
         hospitals: []
     });
 };
-
-// Generate a patient number like PAT00001
-function generatePatientNumber(callback) {
-    const query = `SELECT id FROM patients ORDER BY id DESC LIMIT 1`;
-
-    db.query(query, (error, results) => {
-        if (error) {
-            return callback(error);
-        }
-
-        const nextNumber = results[0].total + 1;
-        const patientNumber = "PAT" + String(nextNumber).padStart(5, "0");
-
-        callback(null, patientNumber);
-    });
-}
-
-// Generate a staff number like STF00001
-function generateStaffNumber(callback) {
-    // Get the most recently created staff account
-const query = `SELECT id FROM users WHERE staff_number IS NOT NULL ORDER BY id DESC LIMIT 1`;
-
-    db.query(query, (error, results) => {
-        if (error) {
-            return callback(error);
-        }
-
-        const nextNumber = results[0].total + 1;
-        const staffNumber = "STF" + String(nextNumber).padStart(5, "0");
-
-        callback(null, staffNumber);
-    });
-}
 
 // Create a new account
 exports.signup = async (req, res) => {
@@ -88,19 +55,19 @@ exports.signup = async (req, res) => {
         confirm_password
     } = req.body;
 
-    // Ensure both passwords match
+    // Verify password confirmation
     if (password !== confirm_password) {
         return res.send("Passwords do not match");
     }
 
     try {
 
-        // Hash password before storing it
+        // Hash password before saving it
         const passwordHash = await bcrypt.hash(password, 10);
 
-        // -------------------------
+        // =========================
         // PATIENT ACCOUNT CREATION
-        // -------------------------
+        // =========================
         if (account_type === "patient") {
 
             const {
@@ -110,88 +77,85 @@ exports.signup = async (req, res) => {
                 allergies
             } = req.body;
 
-            generatePatientNumber((error, patientNumber) => {
+            const userQuery = `
+                INSERT INTO users (
+                    hospital_id,
+                    name,
+                    email,
+                    phone,
+                    password_hash,
+                    role,
+                    status
+                )
+                VALUES (
+                    NULL,
+                    ?,
+                    NULL,
+                    ?,
+                    ?,
+                    'patient',
+                    'approved'
+                )
+            `;
 
-                if (error) {
-                    console.log(error);
-                    return res.send("Database error");
-                }
+            db.query(
+                userQuery,
+                [name, phone, passwordHash],
+                (error, userResult) => {
 
-                const userQuery = `
-                    INSERT INTO users (
-                        hospital_id,
-                        name,
-                        email,
-                        phone,
-                        password_hash,
-                        role,
-                        status
-                    )
-                    VALUES (
-                        NULL,
-                        ?,
-                        NULL,
-                        ?,
-                        ?,
-                        'patient',
-                        'approved'
-                    )
-                `;
-
-                db.query(
-                    userQuery,
-                    [name, phone, passwordHash],
-                    (error, userResult) => {
-
-                        if (error) {
-                            console.log(error);
-                            return res.send("Database error");
-                        }
-
-                        const patientQuery = `
-                            INSERT INTO patients (
-                                user_id,
-                                patient_number,
-                                birth_date,
-                                gender,
-                                blood_group,
-                                allergies
-                            )
-                            VALUES (?, ?, ?, ?, ?, ?)
-                        `;
-
-                        db.query(
-                            patientQuery,
-                            [
-                                userResult.insertId,
-                                patientNumber,
-                                birth_date,
-                                gender,
-                                blood_group || null,
-                                allergies || null
-                            ],
-                            (error) => {
-
-                                if (error) {
-                                    console.log(error);
-                                    return res.send("Database error");
-                                }
-
-                                res.send(
-                                    `Patient account created successfully. Your patient number is ${patientNumber}`
-                                );
-                            }
-                        );
+                    if (error) {
+                        console.log(error);
+                        return res.send("Database error");
                     }
-                );
-            });
+
+                    // Create unique patient number using AUTO_INCREMENT id
+                    const patientNumber =
+                        "PAT" +
+                        String(userResult.insertId).padStart(5, "0");
+
+                    const patientQuery = `
+                        INSERT INTO patients (
+                            user_id,
+                            patient_number,
+                            birth_date,
+                            gender,
+                            blood_group,
+                            allergies
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    `;
+
+                    db.query(
+                        patientQuery,
+                        [
+                            userResult.insertId,
+                            patientNumber,
+                            birth_date,
+                            gender,
+                            blood_group || null,
+                            allergies || null
+                        ],
+                        (error) => {
+
+                            if (error) {
+                                console.log(error);
+                                return res.send("Database error");
+                            }
+
+                            res.send(
+                                `Patient account created successfully. Your patient number is ${patientNumber}`
+                            );
+                        }
+                    );
+                }
+            );
 
             return;
         }
 
-        // -----------------------
+        // =======================
         // STAFF ACCOUNT CREATION
-        // -----------------------
+        // =======================
         if (account_type === "staff") {
 
             const {
@@ -199,62 +163,78 @@ exports.signup = async (req, res) => {
                 requested_role
             } = req.body;
 
-            generateStaffNumber((error, staffNumber) => {
+            // Create staff account in pending state
+            const userQuery = `
+                INSERT INTO users (
+                    hospital_id,
+                    name,
+                    email,
+                    phone,
+                    password_hash,
+                    role,
+                    requested_role,
+                    status
+                )
+                VALUES (
+                    ?,
+                    ?,
+                    ?,
+                    ?,
+                    ?,
+                    'pending',
+                    ?,
+                    'pending'
+                )
+            `;
 
-                if (error) {
-                    console.log(error);
-                    return res.send("Database error");
-                }
+            db.query(
+                userQuery,
+                [
+                    hospital_id,
+                    name,
+                    email,
+                    phone,
+                    passwordHash,
+                    requested_role
+                ],
+                (error, userResult) => {
 
-                const query = `
-                    INSERT INTO users (
-                        hospital_id,
-                        name,
-                        email,
-                        phone,
-                        staff_number,
-                        password_hash,
-                        role,
-                        requested_role,
-                        status
-                    )
-                    VALUES (
-                        ?,
-                        ?,
-                        ?,
-                        ?,
-                        ?,
-                        ?,
-                        'pending',
-                        ?,
-                        'pending'
-                    )
-                `;
-
-                db.query(
-                    query,
-                    [
-                        hospital_id,
-                        name,
-                        email,
-                        phone,
-                        staffNumber,
-                        passwordHash,
-                        requested_role
-                    ],
-                    (error) => {
-
-                        if (error) {
-                            console.log(error);
-                            return res.send("Database error");
-                        }
-
-                        res.send(
-                            `Staff account submitted successfully. Your staff number is ${staffNumber}. Please wait for approval.`
-                        );
+                    if (error) {
+                        console.log(error);
+                        return res.send("Database error");
                     }
-                );
-            });
+
+                    // Create unique staff number using AUTO_INCREMENT id
+                    const staffNumber =
+                        "STF" +
+                        String(userResult.insertId).padStart(5, "0");
+
+                    const updateQuery = `
+                        UPDATE users
+                        SET staff_number = ?
+                        WHERE id = ?
+                    `;
+
+                    db.query(
+                        updateQuery,
+                        [
+                            staffNumber,
+                            userResult.insertId
+                        ],
+                        (error) => {
+
+                            if (error) {
+                                console.log(error);
+                                return res.send("Database error");
+                            }
+
+                            res.send(
+                                `Staff account submitted successfully. Your staff number is ${staffNumber}. Please wait for approval.`
+                            );
+                        }
+                    );
+                }
+            );
 
             return;
         }
@@ -262,8 +242,10 @@ exports.signup = async (req, res) => {
         res.send("Invalid account type");
 
     } catch (error) {
+
         console.log(error);
         res.send("Unexpected server error");
+
     }
 };
 
