@@ -201,6 +201,39 @@ VALUES (
     'approved'
 );
 
+INSERT INTO hospitals (name, city, phone, email)
+VALUES
+(
+    'Hopital Central de Yaounde',
+    'Yaounde',
+    '222230040',
+    'contact@hcy.cm'
+),
+(
+    'Hopital General de Yaounde',
+    'Yaounde',
+    '222211900',
+    'contact@hgy.cm'
+),
+(
+    'Hopital Gyneco-Obstetrique et Pediatrique',
+    'Yaounde',
+    '222317300',
+    'contact@hgopy.cm'
+),
+(
+    'Centre Hospitalier Universitaire de Yaounde',
+    'Yaounde',
+    '222310000',
+    'contact@chuy.cm'
+),
+(
+    'Hopital Jamot',
+    'Yaounde',
+    '222230800',
+    'contact@jamot.cm'
+);
+
 /* Architecture de Hierarchie des Roles */
 
 /* SUPER ADMIN 
