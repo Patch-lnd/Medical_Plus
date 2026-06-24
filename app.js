@@ -1,9 +1,12 @@
 const express = require("express")
 const session = require("express-session")
 const path = require("path")
+require("dotenv").config({
+    path: "./configs.env"
+});
 
 // Routes
-const authRoutes = require("./routes/auth");
+const authRoutes = require("./routes/authRoutes");
 const isAuthenticated = require("./middleware/authMiddleware");
 
 const app = express();
@@ -28,7 +31,7 @@ app.set('trust proxy', 1); // 1 Means trust first proxy
 
 app.use(
     session({
-        secret: "hospital_secret",
+        secret: process.env.SESSION_SECRET,
         resave: false,
         saveUninitialized: false,
         cookie: {
@@ -40,14 +43,10 @@ app.use(
 
 app.use("/", authRoutes);
 
-app.get("/", (req, res)=>{
-    res.render("login");
-})
-
 app.get("/dashboard", isAuthenticated, (req, res)=>{
     res.render("dashboard", {user: req.session.user});
 });
 
-app.listen(3000, ()=>{
-    console.log("Serveur démaré sur le port 3000")
+app.listen(process.env.PORT, ()=>{
+    console.log(`Serveur démaré sur le port ${process.env.PORT}`)
 });
