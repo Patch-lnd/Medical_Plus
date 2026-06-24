@@ -22,6 +22,10 @@ app.use(
 // EJS configuration 
 app.set("view engine", "ejs");
 
+// If behing a proxy server (like when deploying on Cloudfalre, Nginx, Heroku), trust the first proxy
+app.set('trust proxy', 1); // 1 Means trust first proxy
+
+
 app.use(
     session({
         secret: "hospital_secret",
